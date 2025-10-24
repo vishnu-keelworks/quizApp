@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Quiz App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for Inter font and general body styling */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align items to the start to allow scrolling for long quizzes */
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        /* Ensure the quiz container is centered and responsive */
+        .quiz-container {
+            max-width: 700px; /* Slightly wider for multiple questions */
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 1rem; /* Rounded corners */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+            padding: 2.5rem; /* Increased padding */
+            box-sizing: border-box;
+            margin-top: 20px; /* Add some margin from the top */
+            margin-bottom: 20px; /* Add some margin at the bottom */
+        }
+        .question-block {
+            margin-bottom: 2.5rem; /* Space between questions */
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #e5e7eb; /* Separator between questions */
+        }
+        .question-block:last-child {
+            border-bottom: none; /* No border for the last question */
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .option-label {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem; /* Padding for options */
+            border: 1px solid #e5e7eb; /* Light border */
+            border-radius: 0.5rem; /* Slightly rounded corners for options */
+            margin-bottom: 0.75rem; /* Space between options */
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .option-label:hover {
+            background-color: #f9fafb; /* Light hover background */
+            border-color: #d1d5db; /* Darker border on hover */
+        }
+        .option-label input[type="radio"] {
+            margin-right: 0.75rem; /* Space between radio button and text */
+            accent-color: #4f46e5; /* Accent color for radio button */
+        }
+        .option-label.selected {
+            background-color: #e0e7ff; /* Light blue background for selected option */
+            border-color: #6366f1; /* Blue border for selected option */
+        }
+        .button-primary {
+            background-color: #4f46e5; /* Indigo */
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .button-primary:hover {
+            background-color: #4338ca; /* Darker indigo on hover */
+        }
+        .button-secondary {
+            background-color: #e5e7eb; /* Light gray */
+            color: #374151; /* Dark gray text */
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .button-secondary:hover {
+            background-color: #d1d5db; /* Darker gray on hover */
+        }
+        .hidden {
+            display: none;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-container" class="quiz-container">
+        <!-- Quiz Questions Section -->
+        <div id="quiz-section" class="fade-in">
+            <h1 class="text-3xl font-bold mb-8 text-gray-800 text-center">C# and ASP.NET MVC Quiz</h1>
+            <form id="quiz-form">
+                <!-- Questions will be dynamically loaded here -->
+            </form>
+            <div class="flex justify-center mt-8">
+                <button id="submit-button" class="button-primary">Submit Quiz</button>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results-section" class="hidden text-center fade-in">
+            <h2 class="text-3xl font-bold mb-4 text-gray-800">Quiz Results</h2>
+            <p class="text-xl text-gray-700 mb-6">You scored <span id="score" class="font-bold text-indigo-600"></span> out of <span id="total-questions" class="font-bold text-indigo-600"></span> questions.</p>
+            <div id="feedback-message" class="text-lg mb-8"></div>
+            <button id="restart-button" class="button-primary">Retake Quiz</button>
+        </div>
+    </div>
+
+    <script>
+        // Define quiz questions
+        const questions = [
+            {
+                question: "Which keyword is used to define a class in C#?",
+                options: ["class", "Class", "define", "struct"],
+                answer: "class"
+            },
+            {
+                question: "What does MVC stand for in ASP.NET MVC?",
+                options: ["Model View Controller", "Master View Component", "Managed Visual Code", "Multiple View Control"],
+                answer: "Model View Controller"
+            },
+            {
+                question: "Which of the following is a value type in C#?",
+                options: ["string", "class", "int", "Array"],
+                answer: "int"
+            },
+            {
+                question: "In ASP.NET MVC, which folder typically contains the application's views?",
+                options: ["Models", "Controllers", "Views", "Assets"],
+                answer: "Views"
+            },
+            {
+                question: "What is the base class for all exceptions in C#?",
+                options: ["Error", "SystemException", "Exception", "ApplicationException"],
+                answer: "Exception"
+            },
+            {
+                question: "Which HTTP verb is typically used for submitting form data in ASP.NET MVC?",
+                options: ["GET", "PUT", "DELETE", "POST"],
+                answer: "POST"
+            }
+        ];
+
+        // Get DOM elements
+        const quizSection = document.getElementById('quiz-section');
+        const resultsSection = document.getElementById('results-section');
+        const quizForm = document.getElementById('quiz-form');
+        const submitButton = document.getElementById('submit-button');
+        const scoreSpan = document.getElementById('score');
+        const totalQuestionsSpan = document.getElementById('total-questions');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const restartButton = document.getElementById('restart-button');
+
+        /**
+         * Renders all questions and their options into the quiz form.
+         */
+        function renderAllQuestions() {
+            quizForm.innerHTML = ''; // Clear previous content
+            questions.forEach((question, qIndex) => {
+                const questionBlock = document.createElement('div');
+                questionBlock.className = 'question-block';
+
+                const questionText = document.createElement('h2');
+                questionText.className = 'text-xl font-semibold mb-4 text-gray-800';
+                questionText.textContent = `${qIndex + 1}. ${question.question}`;
+                questionBlock.appendChild(questionText);
+
+                const optionsContainer = document.createElement('div');
+                optionsContainer.className = 'space-y-3';
+
+                question.options.forEach((option, oIndex) => {
+                    const optionId = `question-${qIndex}-option-${oIndex}`;
+
+                    const label = document.createElement('label');
+                    label.htmlFor = optionId;
+                    label.className = 'option-label';
+
+                    const input = document.createElement('input');
+                    input.type = 'radio';
+                    input.name = `question-${qIndex}`; // Unique name for each question's radio group
+                    input.id = optionId;
+                    input.value = option;
+
+                    // Add event listener to update visual selection
+                    input.addEventListener('change', () => {
+                        // Remove 'selected' class from all labels for this question
+                        document.querySelectorAll(`input[name="question-${qIndex}"]`).forEach(radio => {
+                            radio.closest('.option-label').classList.remove('selected');
+                        });
+                        // Add 'selected' class to the current label
+                        label.classList.add('selected');
+                    });
+
+                    const span = document.createElement('span');
+                    span.textContent = option;
+
+                    label.appendChild(input);
+                    label.appendChild(span);
+                    optionsContainer.appendChild(label);
+                });
+                questionBlock.appendChild(optionsContainer);
+                quizForm.appendChild(questionBlock);
+            });
+        }
+
+        /**
+         * Calculates the score and displays the results section.
+         */
+        function showResults() {
+            let score = 0;
+            const userAnswers = [];
+
+            questions.forEach((question, qIndex) => {
+                const selectedOption = document.querySelector(`input[name="question-${qIndex}"]:checked`);
+                if (selectedOption) {
+                    userAnswers.push(selectedOption.value);
+                } else {
+                    userAnswers.push(null); // No answer selected for this question
+                }
+            });
+
+            for (let i = 0; i < questions.length; i++) {
+                if (userAnswers[i] === questions[i].answer) {
+                    score++;
+                }
+            }
+
+            quizSection.classList.add('hidden');
+            resultsSection.classList.remove('hidden');
+            resultsSection.classList.add('fade-in'); // Add fade-in animation for results
+
+            scoreSpan.textContent = score;
+            totalQuestionsSpan.textContent = questions.length;
+
+            if (score === questions.length) {
+                feedbackMessage.textContent = "Excellent! You got all the answers correct!";
+                feedbackMessage.className = "text-lg mb-8 text-green-600 font-medium";
+            } else if (score >= questions.length / 2) {
+                feedbackMessage.textContent = "Good job! You did well.";
+                feedbackMessage.className = "text-lg mb-8 text-blue-600 font-medium";
+            } else {
+                feedbackMessage.textContent = "Keep practicing! You can do better.";
+                feedbackMessage.className = "text-lg mb-8 text-red-600 font-medium";
+            }
+        }
+
+        /**
+         * Resets the quiz to its initial state.
+         */
+        function restartQuiz() {
+            resultsSection.classList.add('hidden');
+            quizSection.classList.remove('hidden');
+            quizSection.classList.add('fade-in'); // Add fade-in animation for quiz section
+            renderAllQuestions(); // Re-render questions to clear selections
+        }
+
+        // Event Listeners
+        submitButton.addEventListener('click', showResults);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Initial load: Render all questions when the window loads
+        window.onload = renderAllQuestions;
+    </script>
+</body>
+</html>
